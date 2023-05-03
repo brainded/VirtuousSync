@@ -1,4 +1,5 @@
 ﻿using RestSharp;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Sync
@@ -23,7 +24,7 @@ namespace Sync
             _restClient = new RestClient(options);
         }
 
-        public async Task<PagedResult<AbbreviatedContact>> GetContactsAsync(int skip, int take)
+        public async Task<PagedResult<AbbreviatedContact>> GetContactsAsync(int skip, int take, string state)
         {
             var request = new RestRequest("/api/Contact/Query", Method.Post);
             request.AddQueryParameter("Skip", skip);
@@ -33,7 +34,12 @@ namespace Sync
             request.AddJsonBody(body);
 
             var response = await _restClient.PostAsync<PagedResult<AbbreviatedContact>>(request);
+            //Expression<Func<AbbreviatedContact, bool>> predicate = x => string.IsNullOrWhiteSpace(state) ? true : x.Address.Contains(state);
+
+            response.List = response.List.Where(x => string.IsNullOrWhiteSpace(state) ? true : x.Address.Contains(state)).ToList();
+
             return response;
         }
+
     }
 }

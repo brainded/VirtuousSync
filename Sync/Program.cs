@@ -29,7 +29,7 @@ namespace Sync
             {
                 do
                 {
-                    var contacts = await virtuousService.GetContactsAsync(skip, take);
+                    var contacts = await virtuousService.GetContactsAsync(skip, take, "AZ");
                     skip += take;
                     csv.WriteRecords(contacts.List);
                     hasMore = skip > maxContacts;
