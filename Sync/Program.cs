@@ -1,4 +1,5 @@
 ﻿using CsvHelper;
+using DAL;
 using System;
 using System.Globalization;
 using System.IO;
@@ -24,18 +25,32 @@ namespace Sync
             var maxContacts = 1000;
             var hasMore = true;
 
-            using (var writer = new StreamWriter($"Contacts_{DateTime.Now:MM_dd_yyyy}.csv"))
-            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+            do
             {
-                do
+                var contacts = await virtuousService.GetContactsAsync(skip, take, "AZ");
+                skip += take;
+
+                using (var dbContext = new DonorContext())
                 {
-                    var contacts = await virtuousService.GetContactsAsync(skip, take, "AZ");
-                    skip += take;
-                    csv.WriteRecords(contacts.List);
-                    hasMore = skip > maxContacts;
+                    dbContext.Contacts.AddRange(contacts.List);
+                    await dbContext.SaveChangesAsync();
                 }
-                while (!hasMore);
+                hasMore = skip > maxContacts;
             }
+            while (!hasMore);
+
+            //using (var writer = new StreamWriter($"Contacts_{DateTime.Now:MM_dd_yyyy}.csv"))
+            //using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+            //{
+            //    do
+            //    {
+            //        var contacts = await virtuousService.GetContactsAsync(skip, take, "AZ");
+            //        skip += take;
+            //        csv.WriteRecords(contacts.List);
+            //        hasMore = skip > maxContacts;
+            //    }
+            //    while (!hasMore);
+            //}
         }
     }
 }
