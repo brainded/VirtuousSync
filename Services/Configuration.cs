@@ -4,14 +4,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Sync
+namespace Services
 {
     public interface IConfiguration
     {
         string GetValue(string key);
     }
 
-    internal class Configuration : IConfiguration
+    public class Configuration : IConfiguration
     {
         public Configuration(string apiKey) 
         {

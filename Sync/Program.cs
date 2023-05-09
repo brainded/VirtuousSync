@@ -1,9 +1,10 @@
-﻿using CsvHelper;
+﻿using Autofac;
+using Autofac.Core;
 using DAL;
-using System;
-using System.Globalization;
-using System.IO;
-using System.Threading.Tasks;
+using DAL.Repository;
+using RestSharp;
+using Services;
+using System.Configuration;
 
 namespace Sync
 {
@@ -11,46 +12,49 @@ namespace Sync
     {
         static void Main(string[] args)
         {
-            Sync().GetAwaiter().GetResult();
+            var container = BuildContainer();
+
+            container.Resolve<Application>().Sync().GetAwaiter().GetResult();
         }
-
-        private static async Task Sync()
+        static IContainer BuildContainer()
         {
-            var apiKey = "v_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiN2VhYTBhNTQtYTBiZC00OTNlLWFjNDMtZjNjZGEwZmVlNWQ5IiwiZXhwIjoyMTQ3NDgzNjQ3LCJpc3MiOiJodHRwczovL2FwcC52aXJ0dW91c3NvZnR3YXJlLmNvbSIsImF1ZCI6Imh0dHBzOi8vYXBpLnZpcnR1b3Vzc29mdHdhcmUuY29tIn0.oN0bfmYMS7lPxGtVH3ouEVhD0Kuzoqa2nAnuvPTyPpk";
-            var configuration = new Configuration(apiKey);
-            var virtuousService = new VirtuousService(configuration);
+            var persistentStore = ConfigurationManager.AppSettings["PersistentStore"];
+            var apiKey = ConfigurationManager.AppSettings["ApiKey"];
 
-            var skip = 0;
-            var take = 100;
-            var maxContacts = 1000;
-            var hasMore = true;
+            var builder = new ContainerBuilder();
+            builder.RegisterType<Services.Configuration>()
+                   .As<IConfiguration>()
+                   .WithParameter("apiKey", apiKey)
+                   .SingleInstance();
 
-            do
-            {
-                var contacts = await virtuousService.GetContactsAsync(skip, take, "AZ");
-                skip += take;
+            builder.RegisterType<VirtuousService>()
+                   .As<IVirtuousService>();
+            
 
-                using (var dbContext = new DonorContext())
-                {
-                    dbContext.Contacts.AddRange(contacts.List);
-                    await dbContext.SaveChangesAsync();
-                }
-                hasMore = skip > maxContacts;
-            }
-            while (!hasMore);
+            builder.RegisterType<DonorContext>();
 
-            //using (var writer = new StreamWriter($"Contacts_{DateTime.Now:MM_dd_yyyy}.csv"))
-            //using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
-            //{
-            //    do
-            //    {
-            //        var contacts = await virtuousService.GetContactsAsync(skip, take, "AZ");
-            //        skip += take;
-            //        csv.WriteRecords(contacts.List);
-            //        hasMore = skip > maxContacts;
-            //    }
-            //    while (!hasMore);
-            //}
+            builder.RegisterGeneric(typeof(Repository<>)).As(typeof(IRepository<>));
+            builder.RegisterGeneric(typeof(CsvRepository<>)).As(typeof(IRepository<>));
+            builder.RegisterGeneric(typeof(Repository<>))
+                .WithParameter(TypedParameter.From(typeof(Contact)));
+            builder.RegisterGeneric(typeof(CsvRepository<>))
+                .WithParameter(TypedParameter.From(typeof(Contact)));
+
+            builder.RegisterType<Application>().WithParameter(
+                            new ResolvedParameter(
+                              (pi, ctx) => pi.ParameterType.Name == typeof(IRepository<>).Name,
+                              (pi, ctx) =>
+                              {
+                                  if (persistentStore == "DB")
+                                  {
+                                      return ctx.Resolve(typeof(Repository<>).MakeGenericType(pi.ParameterType.GenericTypeArguments[0]));
+                                  }
+                                  else
+                                  {
+                                      return ctx.Resolve(typeof(CsvRepository<>).MakeGenericType(pi.ParameterType.GenericTypeArguments[0]));
+                                  }
+                              }));
+            return builder.Build();
         }
     }
 }

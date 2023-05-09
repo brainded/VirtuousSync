@@ -4,12 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Sync
+namespace Services
 {
     public class PagedResult<T>
     {
         public int Total { get; set; }
 
-        public List<T> List { get; set; }
+        public IList<T> List { get; set; }
     }
 }

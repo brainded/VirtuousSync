@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sync", "Sync.csproj", "{496
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DAL", "..\DAL\DAL.csproj", "{5E74A8F4-8B82-4C0A-85A4-539F7667A2EB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Services", "..\Services\Services.csproj", "{EEE65E90-FC8C-4D35-A69E-E67A54C8631B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{5E74A8F4-8B82-4C0A-85A4-539F7667A2EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5E74A8F4-8B82-4C0A-85A4-539F7667A2EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5E74A8F4-8B82-4C0A-85A4-539F7667A2EB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EEE65E90-FC8C-4D35-A69E-E67A54C8631B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EEE65E90-FC8C-4D35-A69E-E67A54C8631B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EEE65E90-FC8C-4D35-A69E-E67A54C8631B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EEE65E90-FC8C-4D35-A69E-E67A54C8631B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
