@@ -1,8 +1,10 @@
-﻿using CsvHelper;
-using System;
-using System.Globalization;
-using System.IO;
-using System.Threading.Tasks;
+﻿using Autofac;
+using Autofac.Core;
+using DAL;
+using DAL.Repository;
+using RestSharp;
+using Services;
+using System.Configuration;
 
 namespace Sync
 {
@@ -10,32 +12,49 @@ namespace Sync
     {
         static void Main(string[] args)
         {
-            Sync().GetAwaiter().GetResult();
+            var container = BuildContainer();
+
+            container.Resolve<Application>().Sync().GetAwaiter().GetResult();
         }
-
-        private static async Task Sync()
+        static IContainer BuildContainer()
         {
-            var apiKey = "REPLACE_WITH_API_KEY_PROVIDED";
-            var configuration = new Configuration(apiKey);
-            var virtuousService = new VirtuousService(configuration);
+            var persistentStore = ConfigurationManager.AppSettings["PersistentStore"];
+            var apiKey = ConfigurationManager.AppSettings["ApiKey"];
 
-            var skip = 0;
-            var take = 100;
-            var maxContacts = 1000;
-            var hasMore = true;
+            var builder = new ContainerBuilder();
+            builder.RegisterType<Services.Configuration>()
+                   .As<IConfiguration>()
+                   .WithParameter("apiKey", apiKey)
+                   .SingleInstance();
 
-            using (var writer = new StreamWriter($"Contacts_{DateTime.Now:MM_dd_yyyy}.csv"))
-            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
-            {
-                do
-                {
-                    var contacts = await virtuousService.GetContactsAsync(skip, take);
-                    skip += take;
-                    csv.WriteRecords(contacts.List);
-                    hasMore = skip > maxContacts;
-                }
-                while (!hasMore);
-            }
+            builder.RegisterType<VirtuousService>()
+                   .As<IVirtuousService>();
+            
+
+            builder.RegisterType<DonorContext>();
+
+            builder.RegisterGeneric(typeof(Repository<>)).As(typeof(IRepository<>));
+            builder.RegisterGeneric(typeof(CsvRepository<>)).As(typeof(IRepository<>));
+            builder.RegisterGeneric(typeof(Repository<>))
+                .WithParameter(TypedParameter.From(typeof(Contact)));
+            builder.RegisterGeneric(typeof(CsvRepository<>))
+                .WithParameter(TypedParameter.From(typeof(Contact)));
+
+            builder.RegisterType<Application>().WithParameter(
+                            new ResolvedParameter(
+                              (pi, ctx) => pi.ParameterType.Name == typeof(IRepository<>).Name,
+                              (pi, ctx) =>
+                              {
+                                  if (persistentStore == "DB")
+                                  {
+                                      return ctx.Resolve(typeof(Repository<>).MakeGenericType(pi.ParameterType.GenericTypeArguments[0]));
+                                  }
+                                  else
+                                  {
+                                      return ctx.Resolve(typeof(CsvRepository<>).MakeGenericType(pi.ParameterType.GenericTypeArguments[0]));
+                                  }
+                              }));
+            return builder.Build();
         }
     }
 }
