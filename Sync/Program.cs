@@ -15,7 +15,7 @@ namespace Sync
 
         private static async Task Sync()
         {
-            var apiKey = "REPLACE_WITH_API_KEY_PROVIDED";
+            var apiKey = "";
             var configuration = new Configuration(apiKey);
             var virtuousService = new VirtuousService(configuration);
 
@@ -32,7 +32,7 @@ namespace Sync
                     var contacts = await virtuousService.GetContactsAsync(skip, take);
                     skip += take;
                     csv.WriteRecords(contacts.List);
-                    hasMore = skip > maxContacts;
+                    hasMore = skip > maxContacts - take;
                 }
                 while (!hasMore);
             }
